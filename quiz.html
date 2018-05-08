@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html, lang ="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Week 1</title>
+	<script type="text/javascript" src="babylon.custom.js"></script>
+	<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+	<script>
+	let r = false;
+	let l = false;
+	let u = false;
+	let d = false;
+		window.onkeydown = function(event)
+		{
+			//alert(String.fromCharCode(event.keyCode)+"-->"+event.keyCode);
+			if(event.keyCode == 68)
+			{
+				r = true;
+			}
+			if(event.keyCode == 65)
+			{
+				l = true;
+			}
+			if(event.keyCode == 87)
+			{
+				u = true;
+			}
+			if(event.keyCode == 83)
+			{
+				d = true;
+			}
+
+		}
+		window.onkeyup = function(event)
+		{
+			//alert(String.fromCharCode(event.KeyCode)+"-->"+event.keyCode);
+			if(event.keyCode == 68)
+			{
+				r = false;
+			}
+			if(event.keyCode == 65)
+			{
+				l = false;
+			}
+			if(event.keyCode == 87)
+			{
+				u = false;
+			}
+			if(event.keyCode==83)
+			{
+				d = false;
+			}
+		}
+		</script>
+<canvas id="renderCanvas"></canvas>
+	<script>
+	var canvas, engine, scene, camera;
+	var t = 0;
+	var count = 0;
+	document.addEventListener("DOMContentLoaded",function(){
+	//get renderCanvas
+	canvas = document.getElementById("renderCanvas");
+
+	//create babylon engine
+	engine = new BABYLON.Engine(canvas,true);
+
+	//create scene
+	scene = new BABYLON.Scene(engine);
+
+	gravity = new BABYLON.Vector3(0,-9.81,0);
+	physicsEngine = new BABYLON.CannonJSPlugin();
+
+	scene.enablePhysics(gravity, physicsEngine);
+
+	//create free camera
+		//camera = new BABYLON.FreeCamera("Camera", new BABYLON.Vector3(0,3,-10),scene);
+	//Parameters: alpha, beta, radius, target position, scene
+	camera = new BABYLON.ArcRotateCamera("Camera",0,0,10, new BABYLON.Vector3(0,0,0), scene);
+
+	//target the camera to scene origin
+	// camera.setTarget(new BABYLON.Vector3(0,0,0));
+	//Position the camera overwriting alpha, beta, radius
+	camera.setPosition(new BABYLON.Vector3(0,10,20));
+
+	//Attach the camera to the canvas
+	camera.attachControl(canvas,true);
+
+
+	var mat = new BABYLON.StandardMaterial("material",scene);
+	//diffuse: basic color or texture -> under light
+	//specular: highlight							-> under light
+	//emissive: color or texture as if self lit
+	//ambient: color or texture lit by environmental background lighting
+	//				-requires ambient color of scene to be set
+	scene.ambientColor = new BABYLON.Color3(10,255,255);
+	mat.diffuseColor = new BABYLON.Color3(0,0,0);
+	mat.specularColor = new BABYLON.Color3(1,0,0);
+	//mat.diffuseTexture = new BABYLON.Texture("assets/rock.png",scene);
+	//mat.specularTexture = new BABYLON.Texture("assets/grass.jpg",scene);
+	mat.specularPower = 25;
+	mat.emissiveColor = new BABYLON.Color3(0.2,0.2,0.2);
+	mat.ambientColor = new BABYLON.Color3(0.23,0.90,0.53);
+	//transparency
+	mat.alpha = 1;
+
+	//create light
+	var light = new BABYLON.HemisphericLight("hlight", new BABYLON.Vector3(0,8,0),scene);
+
+
+	var box = new BABYLON.Mesh.CreateBox("box", 1.0, scene);
+	box.position = new BABYLON.Vector3(10,2,0);
+	box.material = mat;
+	box.physicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 1, restitution: 0.5, friction:0.2}, scene);
+
+	var box2 = new BABYLON.Mesh.CreateBox("box", 1.0, scene);
+	box2.position = new BABYLON.Vector3(-5,2,0);
+	box2.material = mat;
+	box2.physicsImpostor = new BABYLON.PhysicsImpostor(box2, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 1, restitution: 0.5, friction:0.2}, scene);
+
+
+	ground = new BABYLON.Mesh.CreateGround("ground",100,100,1,scene);
+	//ground.material = matTex;
+	ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor,{mass: 0, restitution: 0.2, friction: 0.2}, scene);
+
+	box.physicsImpostor.registerOnPhysicsCollide(box2.physicsImpostor,function(main,collided)
+	{
+		if(count == 0)
+			{
+				box.scaling = new BABYLON.Vector3(0.5,0.5,0.5);
+				setTimeout(function(){count += 1;},3000);
+
+	
+			}
+
+			else if(count > 0)
+			{
+				box.setEnabled(false);			}
+	});
+
+	engine.runRenderLoop(function(){
+
+		t -= 0.01;
+		box2.position.x = 5 + Math.sin(t*10);
+		
+
+		if (r == true)
+		{
+			//box.position.x -= 0.05;
+			box.physicsImpostor.applyImpulse(new BABYLON.Vector3(-1,0,0),box.getAbsolutePosition());
+		}
+		if(l == true)
+		{
+			//box.position.x += 0.5;
+			box.physicsImpostor.applyImpulse(new BABYLON.Vector3(1,0,0),box.getAbsolutePosition());
+		}
+		if(u == true)
+		{
+			box.physicsImpostor.applyImpulse(new BABYLON.Vector3(0,0,-1),box.getAbsolutePosition());
+			//box.position.z -= 0.5;
+		}
+		if(d == true)
+		{
+			box.physicsImpostor.applyImpulse(new BABYLON.Vector3(0,0,1),box.getAbsolutePosition());
+			//box.position.z += 0.5;
+		}
+
+		// if(box.intersectsMesh(box2, false))
+		// {
+		// 	box.scaling = new BABYLON.Vector3(0.5,0.5,0.5);
+		// }
+
+
+
+	//	box.position.x = box.position.x + 0.005;
+		scene.render();
+	});
+});
+</script>
+</body>
+</html>
